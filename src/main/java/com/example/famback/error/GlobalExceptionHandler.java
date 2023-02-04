@@ -3,7 +3,7 @@ package com.example.famback.error;
 import com.example.famback.error.custom.CustomException;
 import com.example.famback.error.custom.CustomCodeGroup;
 import com.example.famback.error.custom.CustomCodeType;
-import com.example.famback.response.ResponseDto;
+import com.example.famback.error.response.ResponseDto;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONException;
 import org.springframework.http.HttpHeaders;

@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.example</groupId>
-	<artifactId>famBack</artifactId>
+	<artifactId>todolist</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>war</packaging>
-	<name>famBack</name>
+	<name>todolist</name>
 	<description>Demo project for Spring Boot</description>
 	<properties>
 		<java.version>1.8</java.version>
@@ -75,11 +75,6 @@
 <!--			<artifactId>spring-boot-configuration-processor</artifactId>-->
 <!--			<optional>true</optional>-->
 <!--		</dependency>-->
-		<dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>20210307</version>
-        </dependency>
 		<dependency>
 			<groupId>org.apache.maven.plugins</groupId>
 			<artifactId>maven-resources-plugin</artifactId>

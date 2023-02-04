@@ -1,13 +1,6 @@
 package com.example.famback.error.custom;
 
 import com.example.famback.error.custom.defaultException.CustomDefaultCodeType;
-import com.example.famback.fam.account.exception.CustomAccountCodeType;
-import com.example.famback.fam.board.exception.CustomBoardCodeType;
-import com.example.famback.fam.common.exception.CustomCommonCodeType;
-import com.example.famback.fam.jwt.exception.CustomJwtCodeType;
-import com.example.famback.fam.member.exception.CustomMemberCodeType;
-import com.example.famback.fam.memberClass.exception.CustomMemberClassCodeType;
-import com.example.famback.fam.user.exception.CustomUserCodeType;
 import lombok.Getter;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -39,13 +32,6 @@ import org.json.JSONObject;
 public enum CustomCodeType {
 
      //jwt
-    JWT(CustomJwtCodeType.getTypes()),
-    MEMBER(CustomMemberCodeType.getTypes()),
-    MEMBER_CLASS(CustomMemberClassCodeType.getTypes()),
-    ACCOUNT(CustomAccountCodeType.getTypes()),
-    BOARD(CustomBoardCodeType.getTypes()),
-    USER(CustomUserCodeType.getTypes()),
-    COMMON(CustomCommonCodeType.getTypes()),
     DEFAULT(CustomDefaultCodeType.getTypes());
 
     @Getter
@@ -76,16 +62,5 @@ public enum CustomCodeType {
             }
         }
         return null;
-    }
-    public static JSONObject authJsonObject(String message) throws JSONException {
-        JSONObject responseJson = new JSONObject();
-        CustomJwtCodeType customExceptionType = CustomJwtCodeType.NOT_ACCESS_TOKEN_EXCEPTION;
-        responseJson.put("code",customExceptionType.getCode());
-        responseJson.put("detailCode",customExceptionType.getDetailCode());
-        responseJson.put("name",customExceptionType.name());
-        responseJson.put("httpStatus", customExceptionType.getHttpStatus());
-        responseJson.put("message",message);
-        responseJson.put("body","");
-        return responseJson;
     }
 }

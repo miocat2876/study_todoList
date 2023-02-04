@@ -1,10 +1,5 @@
 package com.example.famback.util;
 
-import com.example.famback.fam.jwt.JwtContext;
-import com.example.famback.fam.jwt.response.Token;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
-
 import javax.servlet.ServletRequest;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -53,27 +48,6 @@ public class NetUtil {
 
 	public static String getUserAgent(HttpServletRequest request){
 		return request.getHeader("User-Agent");
-	}
-
-	public static void addRefreshTokenKeyToHeader(HttpHeaders httpHeaders, String refreshTokenKey){
-		ResponseCookie responseCookie = ResponseCookie.from(JwtContext.REFRESH_COOKIE_KEY,refreshTokenKey)
-				.httpOnly(true)
-				.secure(true)
-				.path("/")
-				.sameSite("")
-				.maxAge(30 * 24 * 60 * 60 * 1000L)
-				.build();
-		httpHeaders.add(HttpHeaders.SET_COOKIE,responseCookie.toString());
-	}
-	public static void deleteRefreshTokenKeyToHeader(HttpHeaders httpHeaders){
-		ResponseCookie responseCookie = ResponseCookie.from(JwtContext.REFRESH_COOKIE_KEY,null)
-				.httpOnly(true)
-				.secure(true)
-				.path("/")
-				.sameSite("")
-				.maxAge(0)
-				.build();
-		httpHeaders.add(HttpHeaders.SET_COOKIE,responseCookie.toString());
 	}
 
 	public static String getAgentbrowser(String userAgent){
