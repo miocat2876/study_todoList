@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+	<include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+	<!--로그 파일 저장 위치-->
+	<property name="LOG_FILE" value="logs/local/logback/logback.log"/>
+	<property name="LOG_FILE_DEV" value="logs/dev/logback/logback.log"/>
+	<property name="LOG_FILE_PROD" value="logs/logback-prod.log"/>
+
+	<springProfile name="local">
+		<appender name="ROLLING-FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+			<file>${LOG_FILE}</file>
+			<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+				<pattern>${FILE_LOG_PATTERN}</pattern>
+			</encoder>
+			<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+				<fileNamePattern>${LOG_FILE}.%d{yyyy-MM-dd}</fileNamePattern>
+				<maxHistory>10</maxHistory>
+				<totalSizeCap>10GB</totalSizeCap>
+			</rollingPolicy>
+		</appender>
+
+		<logger name="com.example.famback" level="debug" additivity="false">
+			<appender-ref ref="CONSOLE"/>
+		</logger>
+		<root level="info">
+			<appender-ref ref="CONSOLE"/>
+			<appender-ref ref="ROLLING-FILE"/>
+		</root>
+	</springProfile>
+
+	<springProfile name="dev">
+		<appender name="ROLLING-FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+			<file>${LOG_FILE_DEV}</file>
+			<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+				<pattern>${FILE_LOG_PATTERN}</pattern>
+			</encoder>
+			<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+				<fileNamePattern>${LOG_FILE}.%d{yyyy-MM-dd}</fileNamePattern>
+				<maxHistory>10</maxHistory>
+				<totalSizeCap>10GB</totalSizeCap>
+			</rollingPolicy>
+		</appender>
+
+		<logger name="com.example.famback" level="debug" additivity="false">
+			<appender-ref ref="CONSOLE"/>
+			<appender-ref ref="ROLLING-FILE"/>
+		</logger>
+		<root level="info">
+			<appender-ref ref="CONSOLE"/>
+			<appender-ref ref="ROLLING-FILE"/>
+		</root>
+	</springProfile>
+
+	<springProfile name="prod">
+		<appender name="ROLLING-FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+			<file>${LOG_FILE_PROD}</file>
+			<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+				<pattern>${FILE_LOG_PATTERN}</pattern>
+			</encoder>
+			<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+				<fileNamePattern>${LOG_FILE_PROD}.%d{yyyy-MM-dd}-prod</fileNamePattern>
+				<maxHistory>30</maxHistory>
+				<totalSizeCap>20GB</totalSizeCap>
+			</rollingPolicy>
+		</appender>
+
+		<logger name="com.example.famback" level="info" additivity="false">
+			<appender-ref ref="CONSOLE"/>
+			<appender-ref ref="ROLLING-FILE"/>
+		</logger>
+		<root level="info">
+			<appender-ref ref="CONSOLE"/>
+			<appender-ref ref="ROLLING-FILE"/>
+		</root>
+	</springProfile>
+
+</configuration>

@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.famback.fam.member.mapper.MemberMapper">
+
+    <!--  회원 키 단건 조회  -->
+    <select id="memberOneFindByKey" parameterType="memberDomain" resultType="memberDomain">
+        SELECT NUM_PK       AS numPk
+             , CREATE_DATE  AS createDate
+             , UPDATE_DATE  AS updateDate
+             , EMAIL        AS email
+             , PASSWORD     AS password
+          FROM MEMBER_TAB
+         WHERE NUM_PK = #{numPk}
+           AND DELETE_YN = 'N'
+    </select>
+
+    <!-- 멤버키조회   -->
+    <select id="findByMemberKey" parameterType="memberDomain" resultType="string">
+        SELECT NUM_PK     AS numPk
+          FROM MEMBER_TAB
+         WHERE EMAIL = #{email}
+           AND PASSWORD = #{password}
+    </select>
+
+    <!-- 이메일 중복 체크   -->
+    <select id="existsByEmail" parameterType="memberDomain" resultType="int">
+        SELECT EXISTS (SELECT NUM_PK
+          FROM MEMBER_TAB
+         WHERE EMAIL = #{email}
+           AND DELETE_YN = 'N'
+        LIMIT 1)
+    </select>
+
+    <!-- 회원마지막번호   -->
+    <select id="memberLastNumber" resultType="int">
+        SELECT IFNULL(MAX(NUM_PK),1)
+          FROM MEMBER_TAB
+    </select>
+
+    <!-- 회원가입  -->
+    <insert id="memberCreate" parameterType="memberDomain">
+        INSERT INTO MEMBER_TAB
+            (NUM_PK, CREATE_DATE, UPDATE_DATE, DELETE_DATE, DELETE_YN, EMAIL, PASSWORD)
+        SELECT #{numPk}
+             , current_timestamp()
+             , NULL
+             , NULL
+             , 'N'
+             , #{email}
+             , #{password}
+            ON DUPLICATE KEY
+        UPDATE PASSWORD    = #{password}
+             , DELETE_YN   = 'N'
+             , UPDATE_DATE = current_timestamp()
+    </insert>
+
+    <!-- 회원 임시 데이터 적재  --><!-- 해당 이메일로 된 이메일 + 타입 + 인증일자가 범위 안에 있는지 여부를 찾아서 인설트 or update 하기-->
+    <insert id="insertMemberTempData" parameterType="memberDomain">
+        INSERT INTO MEMBER_TEMP_DATA_TAB
+            (CONTENT_TYPE, CONTENT, CREATE_DATE, `KEY`, EXPIRATION_TIME)
+        SELECT #{contentType}
+             , #{content}
+             , current_timestamp()
+             , #{key}
+             , #{expirationTime}
+            ON DUPLICATE KEY
+        UPDATE CONTENT         = #{content}
+             , EXPIRATION_TIME = #{expirationTime}
+             , UPDATE_DATE = current_timestamp()
+    </insert>
+
+<!--        &lt;!&ndash; 회원 임시 데이터 조회   &ndash;&gt;-->
+<!--    <select id="findLastTempKey" resultType="int">-->
+<!--        SELECT IFNULL(MAX(NUM_PK),0)-->
+<!--          FROM MEMBER_TEMP_DATA_TAB-->
+<!--    </select>-->
+
+    <!--  회원 활성화  -->
+    <update id="updateMemberTempDataExpirationTime" parameterType="memberTempDataDomain">
+        UPDATE MEMBER_TEMP_DATA_TAB
+           SET EXPIRATION_TIME = #{expirationTime}
+         WHERE `KEY`        = #{key}
+           AND CONTENT      = #{content}
+           AND CONTENT_TYPE = #{contentType}
+    </update>
+
+    <!-- 회원 임시 데이터 조회   -->
+    <select id="findByKeyToContentType" parameterType="memberTempDataDomain" resultType="string">
+        SELECT CONTENT
+          FROM MEMBER_TEMP_DATA_TAB
+         WHERE `KEY` = #{key}
+           AND CONTENT_TYPE = #{contentType}
+    </select>
+
+    <select id="findByKeyToContentToContentTypeToExpirationTime" parameterType="memberTempDataDomain" resultType="memberTempDataDomain">
+        SELECT NUM_PK          AS numPk
+             , CONTENT         AS content
+          FROM MEMBER_TEMP_DATA_TAB
+         WHERE `KEY`   = #{key}
+           AND CONTENT = #{content}
+           AND CONTENT_TYPE    = #{contentType}
+           AND EXPIRATION_TIME > #{expirationTime}
+    </select>
+
+    <select id="findByKeyToContentTypeToExpirationTime" parameterType="memberTempDataDomain" resultType="memberTempDataDomain">
+        SELECT NUM_PK          AS numPk
+             , CONTENT         AS content
+          FROM MEMBER_TEMP_DATA_TAB
+         WHERE `KEY`           = #{key}
+           AND CONTENT_TYPE    = #{contentType}
+           AND EXPIRATION_TIME > #{expirationTime}
+    </select>
+
+    <!-- 회원 존재 여부   -->
+    <select id="findByMember" parameterType="memberDomain" resultType="string">
+        SELECT NUM_PK  AS memberPk
+          FROM MEMBER_TAB
+         WHERE EMAIL = #{email}
+           AND PASSWORD = #{password}
+    </select>
+
+    <!--  회원 삭제  -->
+    <update id="memberDelete" parameterType="memberDomain">
+        UPDATE MEMBER_TAB
+           SET DELETE_YN = 'Y'
+             , DELETE_DATE = SYSDATE()
+         WHERE NUM_PK = #{numPk}
+    </update>
+
+</mapper>

@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.famback.fam.account.mapper.AccountMapper">
+
+    <!--  가계부조회 단건  -->
+    <select id="findOneByKey" parameterType="accountDomain" resultType="accountDomain">
+         SELECT AT.NUM_PK                                                                                       AS numPk
+              , AT.USER_FK                                                                                      AS userFk
+              , AT.ACCOUNT_CODE                                                                                 AS accountCode
+              , AT.PAY_CODE                                                                                     AS payCode
+              , (SELECT DESCRIPTION FROM COMMON_CODE_TAB WHERE CODE = AT.ACCOUNT_CODE AND CODE_GROUP = 'P0002') AS accountName
+              , (SELECT DESCRIPTION FROM COMMON_CODE_TAB WHERE CODE = AT.PAY_CODE AND CODE_GROUP = 'P0001')     AS payName
+              , AT.DESCRIPTION                                                                                  AS description
+              , AT.MONEY                                                                                        AS money
+              , AT.ACCOUNT_TYPE_CODE                                                                            AS accountTypeCode
+              , AT.ACCOUNT_GROUP                                                                                AS accountGroup
+              , AT.TITLE                                                                                        AS title
+              , UT.NICKNAME                                                                                     AS nickname
+           FROM((SELECT NUM_PK
+                      , USER_FK
+                      , ACCOUNT_CODE
+                      , PAY_CODE
+                      , DESCRIPTION
+                      , MONEY
+                      , ACCOUNT_TYPE_CODE
+                      , ACCOUNT_GROUP
+                      , TITLE
+                   FROM ACCOUNT_TAB
+                  WHERE NUM_PK    = #{numPk}
+                    AND DELETE_YN = 'N'
+                ) AS AT
+                  INNER JOIN
+                (SELECT NUM_PK
+                      , NICKNAME
+                   FROM USER_TAB
+                  WHERE NUM_PK = #{userFk}
+                ) AS UT
+               ON AT.USER_FK = UT.NUM_PK
+               )
+    </select>
+
+    <!--  가계부조회 다건  -->
+    <select id="findAccountListByMonth" parameterType="accountDomain" resultType="accountDomain">
+        SELECT A.ACCOUNT_DATE             AS accountDate
+             , SUM(A.MONEY)               AS money
+             , A.ACCOUNT_TYPE_CODE        AS accountTypeCode
+          FROM((SELECT NUM_PK   AS NUM_PK
+                  FROM USER_TAB MCI
+                 WHERE MEMBER_CLASS_FK = #{memberClassFk}
+                   AND DELETE_YN = 'N'
+              ) AS MCI
+                 INNER JOIN
+               (SELECT date_format(CONCAT(#{searchDate}
+                            , date_format(CASE WHEN date_format(START_DATE,'%d') > date_format(LAST_DAY(CONCAT(#{searchDate},'01')),'%d')
+                                               THEN LAST_DAY(CONCAT(#{searchDate},'01'))
+                                               ELSE START_DATE
+                                           END, '%d')
+                              ),'%Y-%m-%d') AS ACCOUNT_DATE
+                     , MONEY                AS MONEY
+                     , ACCOUNT_TYPE_CODE    AS ACCOUNT_TYPE_CODE
+                     , USER_FK              AS USER_FK
+                  FROM ( SELECT date_format(START_DATE,'%Y%m')       AS FORMAT_START_DATE
+                              , date_format(END_DATE,'%Y%m')         AS FORMAT_END_DATE
+                              , START_DATE                           AS START_DATE
+                              , END_DATE                             AS END_DATE
+                              , MONEY                                AS MONEY
+                              , ACCOUNT_TYPE_CODE                    AS ACCOUNT_TYPE_CODE
+                              , USER_FK                              AS USER_FK
+                           FROM ACCOUNT_TAB
+                          WHERE DELETE_YN = 'N'
+                       ) AS FA
+                 WHERE FA.FORMAT_START_DATE <![CDATA[ <= date_format(CONCAT(#{searchDate},'01'), '%Y%m')]]>
+                   AND FA.FORMAT_END_DATE >= date_format(CONCAT(#{searchDate},'01'), '%Y%m')
+              ) A
+                    ON MCI.NUM_PK = A.USER_FK
+              )
+        GROUP BY A.ACCOUNT_DATE, A.ACCOUNT_TYPE_CODE
+    </select>
+
+    <!-- 가계부조회 다건 카운트   -->
+    <select id="findAccountCount" parameterType="accountDomain" resultType="int">
+        SELECT COUNT(*)
+          FROM((SELECT NUM_PK
+                  FROM USER_TAB
+                 WHERE NUM_PK  = #{userFk}
+                   AND DELETE_YN = 'N') AS MCI
+                 INNER JOIN
+               (SELECT CONCAT(#{searchDate}
+                            , date_format(CASE WHEN date_format(START_DATE,'%d') > date_format(LAST_DAY(CONCAT(#{searchDate},'01')),'%d')
+                                               THEN LAST_DAY(CONCAT(#{searchDate},'01'))
+                                               ELSE START_DATE
+                                           END, '%d')
+                              )                                                                                               AS accountDate
+                     , NUM_PK                                                                                                 AS NUM_PK
+                     , (SELECT DESCRIPTION FROM COMMON_CODE_TAB WHERE CODE = PAY_CODE AND CODE_GROUP = 'P0001')               AS PAY_NAME
+                     , (SELECT DESCRIPTION FROM COMMON_CODE_TAB WHERE CODE = ACCOUNT_CODE AND CODE_GROUP = 'P0002')           AS ACCOUNT_NAME
+                     , DESCRIPTION                                                                                            AS DESCRIPTION
+                     , MONEY                                                                                                  AS MONEY
+                     , (SELECT DESCRIPTION FROM COMMON_CODE_TAB WHERE CODE = ACCOUNT_TYPE_CODE AND CODE_GROUP = 'T0001')      AS ACCOUNT_TYPE_NAME
+                     , ACCOUNT_TYPE_CODE                                                                                      AS ACCOUNT_TYPE_CODE
+                     , USER_FK
+                  FROM ( SELECT date_format(START_DATE,'%Y%m')       AS FORMAT_START_DATE
+                              , date_format(END_DATE,'%Y%m')         AS FORMAT_END_DATE
+                              , START_DATE                           AS START_DATE
+                              , END_DATE                             AS END_DATE
+                              , NUM_PK                               AS NUM_PK
+                              , PAY_CODE                             AS PAY_CODE
+                              , ACCOUNT_CODE                         AS ACCOUNT_CODE
+                              , DESCRIPTION                          AS DESCRIPTION
+                              , MONEY                                AS MONEY
+                              , ACCOUNT_TYPE_CODE                    AS ACCOUNT_TYPE_CODE
+                              , USER_FK                 AS USER_FK
+                           FROM ACCOUNT_TAB
+                          WHERE USER_FK = #{userFk}
+                            AND DELETE_YN = 'N'
+                       ) AS FA
+                 WHERE FA.FORMAT_START_DATE <![CDATA[ <= date_format(CONCAT(#{searchDate},'01'), '%Y%m')]]>
+                   AND FA.FORMAT_END_DATE >= date_format(CONCAT(#{searchDate},'01'), '%Y%m')
+               ) A
+            ON MCI.NUM_PK = A.USER_FK
+              )
+    </select>
+
+    <!--  가계부조회 날짜로 조회  -->
+    <select id="findAccountListByDay" parameterType="accountDomain" resultType="accountDomain">
+        SELECT A.ACCOUNT_DATE      AS accountDate
+             , A.MONEY             AS money
+             , A.ACCOUNT_TYPE_CODE AS accountTypeCode
+             , A.START_DATE        AS startDate
+             , A.END_DATE          AS endDate
+             , MCI.NICKNAME        AS nickname
+             , A.NUM_PK            AS numPk
+             , A.PAY_CODE          AS payCode
+             , A.ACCOUNT_CODE      AS accountCode
+             , A.DESCRIPTION       AS description
+             , A.PAY_NAME          AS payName
+             , A.ACCOUNT_NAME      AS accountName
+             , A.ACCOUNT_TYPE_NAME AS accountTypeName
+             , A.DESCRIPTION       AS description
+             , A.TITLE             AS title
+          FROM((SELECT NUM_PK    AS NUM_PK
+                     , NICKNAME  AS NICKNAME
+                     , MEMBER_FK AS MEMBER_FK
+                  FROM USER_TAB MCI
+                 WHERE MEMBER_CLASS_FK = #{memberClassFk}
+                   AND DELETE_YN = 'N'
+              ) AS MCI
+                 INNER JOIN
+               (SELECT date_format(#{searchDate},'%Y-%m-%d') AS ACCOUNT_DATE
+                     , START_DATE                                                                                             AS START_DATE
+                     , END_DATE                                                                                               AS END_DATE
+                     , USER_FK                                                                                                AS USER_FK
+                     , NUM_PK                                                                                                 AS NUM_PK
+                     , TITLE                                                                                                  AS TITLE
+                     , PAY_CODE                                                                                               AS PAY_CODE
+                     , ACCOUNT_CODE                                                                                           AS ACCOUNT_CODE
+                     , (SELECT DESCRIPTION FROM COMMON_CODE_TAB WHERE CODE = PAY_CODE AND CODE_GROUP = 'P0001')               AS PAY_NAME
+                     , (SELECT DESCRIPTION FROM COMMON_CODE_TAB WHERE CODE = ACCOUNT_CODE AND CODE_GROUP = 'P0002')           AS ACCOUNT_NAME
+                     , DESCRIPTION                                                                                            AS DESCRIPTION
+                     , MONEY                                                                                                  AS MONEY
+                     , (SELECT DESCRIPTION FROM COMMON_CODE_TAB WHERE CODE = ACCOUNT_TYPE_CODE AND CODE_GROUP = 'T0001')      AS ACCOUNT_TYPE_NAME
+                     , ACCOUNT_TYPE_CODE                                                                                      AS ACCOUNT_TYPE_CODE
+                  FROM ( SELECT date_format(START_DATE,'%Y%m')       AS FORMAT_START_DATE
+                              , date_format(END_DATE,'%Y%m')         AS FORMAT_END_DATE
+                              , date_format(START_DATE,'%d')         AS FORMAT_START_DAY
+                              , START_DATE                           AS START_DATE
+                              , END_DATE                             AS END_DATE
+                              , NUM_PK                               AS NUM_PK
+                              , PAY_CODE                             AS PAY_CODE
+                              , ACCOUNT_CODE                         AS ACCOUNT_CODE
+                              , DESCRIPTION                          AS DESCRIPTION
+                              , MONEY                                AS MONEY
+                              , ACCOUNT_TYPE_CODE                    AS ACCOUNT_TYPE_CODE
+                              , USER_FK                              AS USER_FK
+                              , TITLE                                AS TITLE
+                           FROM ACCOUNT_TAB
+                          WHERE DELETE_YN = 'N'
+                       ) AS FA
+                 WHERE FA.FORMAT_START_DATE <![CDATA[ <= date_format(#{searchDate}, '%Y%m') ]]>
+                   AND FA.FORMAT_END_DATE >= date_format(#{searchDate}, '%Y%m')
+                   AND FORMAT_START_DAY = date_format(#{searchDate}, '%d')
+              ) A
+                    ON MCI.NUM_PK = A.USER_FK)
+    </select>
+
+    <!-- 가계부 입력   -->
+    <insert id="insertAccount" parameterType="accountDomain">
+        INSERT INTO ACCOUNT_TAB
+        (USER_FK, CREATE_DATE, UPDATE_DATE, DELETE_DATE, DELETE_YN, ACCOUNT_CODE, PAY_CODE, TITLE, DESCRIPTION, MONEY, ACCOUNT_TYPE_CODE, START_DATE, END_DATE)
+        VALUES(#{userFk}, current_timestamp(), NULL, NULL, 'N', #{accountCode}, #{payCode}, #{title}, #{description}, #{money}, #{accountTypeCode}, #{searchDate},
+        CASE WHEN #{accountTypeCode} = '00001' OR #{accountTypeCode} = '00002'
+             THEN '9999-12-31'
+             ELSE #{searchDate}
+         END
+        )
+    </insert>
+
+    <select id="findAccountFixHistory" parameterType="accountDomain" resultType="int">
+        SELECT count(*)
+          FROM ACCOUNT_TAB
+         WHERE NUM_PK=#{numPk}
+           AND DELETE_YN = 'N'
+           AND START_DATE = DATE_FORMAT(#{searchDate},'%Y-%m-%d')
+           AND END_DATE = DATE_FORMAT(#{searchDate},'%Y-%m-%d')
+    </select>
+
+    <!--  고정값 이력관리  -->
+    <insert id="insertAccountFixHistory" parameterType="accountDomain">
+        INSERT INTO ACCOUNT_TAB
+        (USER_FK, ACCOUNT_CODE, PAY_CODE, DESCRIPTION, MONEY, ACCOUNT_TYPE_CODE, START_DATE, END_DATE, ACCOUNT_GROUP)
+        SELECT USER_FK
+             , ACCOUNT_CODE
+             , PAY_CODE
+             , DESCRIPTION
+             , MONEY
+             , ACCOUNT_TYPE_CODE
+             , START_DATE
+             , CASE WHEN DATE_FORMAT(SEARCH_DATE,'%d') >= DATE_FORMAT(START_DATE,'%d')
+                    THEN SEARCH_DATE
+                    ELSE CONCAT(DATE_FORMAT(SEARCH_DATE,'%Y%m'),CASE WHEN DATE_FORMAT(END_DATE,'%d') > DATE_FORMAT(LAST_DAY(SEARCH_DATE),'%d')
+                                                                     THEN DATE_FORMAT(LAST_DAY(SEARCH_DATE),'%d')
+                                                                     ELSE DATE_FORMAT(END_DATE,'%d')
+                                                                 END)
+                END
+             , CASE WHEN ACCOUNT_GROUP = 0
+                    THEN #{numPk}
+                    ELSE ACCOUNT_GROUP
+                END
+          FROM ( SELECT DATE_FORMAT(START_DATE,'%Y%m')                                      AS FORMAT_START_DATE
+                      , START_DATE                                                          AS START_DATE
+                      , DATE_FORMAT(END_DATE,'%d')                                          AS END_D
+                      , DATE_FORMAT(#{searchDate} - INTERVAL 1 MONTH,'%Y%m%d')              AS SEARCH_DATE
+                      , END_DATE                                                            AS END_DATE
+                      , PAY_CODE                                                            AS PAY_CODE
+                      , ACCOUNT_CODE                                                        AS ACCOUNT_CODE
+                      , DESCRIPTION                                                         AS DESCRIPTION
+                      , MONEY                                                               AS MONEY
+                      , ACCOUNT_TYPE_CODE                                                   AS ACCOUNT_TYPE_CODE
+                      , USER_FK                                                             AS USER_FK
+                      , ACCOUNT_GROUP                                                       AS ACCOUNT_GROUP
+                   FROM ACCOUNT_TAB
+                  WHERE NUM_PK = #{numPk}
+                    AND DELETE_YN = 'N'
+               ) AS FA
+         WHERE FORMAT_START_DATE <![CDATA[ < DATE_FORMAT(#{searchDate},'%Y%m') ]]>
+         UNION ALL
+        SELECT USER_FK
+             , ACCOUNT_CODE
+             , PAY_CODE
+             , DESCRIPTION
+             , MONEY
+             , ACCOUNT_TYPE_CODE
+             , CASE WHEN DATE_FORMAT(SEARCH_DATE,'%d') >= DATE_FORMAT(END_DATE,'%d')
+                    THEN SEARCH_DATE
+                    ELSE CONCAT(DATE_FORMAT(SEARCH_DATE,'%Y%m'),CASE WHEN DATE_FORMAT(START_DATE,'%d') > DATE_FORMAT(LAST_DAY(SEARCH_DATE),'%d')
+                                                                     THEN DATE_FORMAT(LAST_DAY(SEARCH_DATE),'%d')
+                                                                     ELSE DATE_FORMAT(START_DATE,'%d')
+                                                                 END)
+                END
+             , END_DATE
+             , CASE WHEN ACCOUNT_GROUP = 0
+                    THEN #{numPk}
+                    ELSE ACCOUNT_GROUP
+                END
+        FROM ( SELECT DATE_FORMAT(END_DATE,'%Y%m')                                        AS FORMAT_END_DATE
+                    , START_DATE                                                          AS START_DATE
+                    , DATE_FORMAT(START_DATE,'%d')                                        AS START_D
+                    , DATE_FORMAT(#{searchDate} + INTERVAL 1 MONTH,'%Y%m%d')              AS SEARCH_DATE
+                    , END_DATE                                                            AS END_DATE
+                    , PAY_CODE                                                            AS PAY_CODE
+                    , ACCOUNT_CODE                                                        AS ACCOUNT_CODE
+                    , DESCRIPTION                                                         AS DESCRIPTION
+                    , MONEY                                                               AS MONEY
+                    , ACCOUNT_TYPE_CODE                                                   AS ACCOUNT_TYPE_CODE
+                    , USER_FK                                                             AS USER_FK
+                    , ACCOUNT_GROUP                                                       AS ACCOUNT_GROUP
+                 FROM ACCOUNT_TAB
+                WHERE NUM_PK = #{numPk}
+                  AND DELETE_YN = 'N'
+             ) AS FA
+        WHERE FORMAT_END_DATE > DATE_FORMAT(START_DATE, '%Y%m');
+    </insert>
+
+    <!--  고정값 이력관리  -->
+    <update id="updateAccountFixHistory" parameterType="accountDomain">
+        UPDATE ACCOUNT_TAB
+           SET START_DATE = DATE_FORMAT(#{searchDate},'%Y%m%d')
+             , END_DATE = DATE_FORMAT(#{searchDate},'%Y%m%d')
+             , ACCOUNT_GROUP = CASE WHEN ACCOUNT_GROUP = 0
+                                    THEN #{numPk}
+                                    ELSE ACCOUNT_GROUP
+                                END
+         WHERE NUM_PK = #{numPk}
+           AND DELETE_YN = 'N'
+    </update>
+
+    <!--  고정값 이력조회  -->
+    <select id="findAccountFix" parameterType="accountDomain" resultType="accountDomain">
+        SELECT USER_FK
+             , ACCOUNT_CODE
+             , PAY_CODE
+             , DESCRIPTION
+             , MONEY
+             , ACCOUNT_TYPE_CODE
+             , ACCOUNT_GROUP
+          FROM ACCOUNT_TAB
+         WHERE ACCOUNT_GROUP > 0
+           AND DELETE_YN = 'N'
+           AND END_DATE = '9999-12-31'
+    </select>
+
+    <!--  고정값 전체 수정  -->
+    <update id="updateAccountFix" parameterType="accountDomain">
+        UPDATE ACCOUNT_TAB
+           SET UPDATE_DATE=current_timestamp(), ACCOUNT_CODE=#{accountCode},
+               PAY_CODE=#{payCode}, DESCRIPTION=#{description}, MONEY=#{money},
+               TITLE=#{title}
+         WHERE ACCOUNT_GROUP = #{accountGroup}
+           AND START_DATE > DATE_FORMAT(NOW(), '%Y%m%d')
+           AND DELETE_YN = 'N'
+    </update>
+
+    <!--  고정값 삭제  -->
+    <update id="deleteAccountFix" parameterType="accountDomain">
+        UPDATE ACCOUNT_TAB
+           SET DELETE_YN = 'Y', DELETE_DATE = NOW()
+         WHERE ACCOUNT_GROUP = #{accountGroup}
+           AND START_DATE > DATE_FORMAT(NOW(), '%Y%m%d')
+    </update>
+
+    <!--  가계부 수정  -->
+    <update id="updateAccount" parameterType="accountDomain">
+        UPDATE ACCOUNT_TAB
+           SET UPDATE_DATE=current_timestamp(), ACCOUNT_CODE=#{accountCode},
+               PAY_CODE=#{payCode}, DESCRIPTION=#{description}, MONEY=#{money},
+               TITLE=#{title}
+         WHERE NUM_PK=#{numPk}
+           AND DELETE_YN = 'N'
+    </update>
+
+    <!--  가계부 삭제-->
+    <update id="deleteAccount" parameterType="accountDomain">
+        UPDATE ACCOUNT_TAB
+           SET DELETE_YN = 'Y', DELETE_DATE = NOW()
+         WHERE NUM_PK = #{numPk}
+    </update>
+
+</mapper>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.famback.fam.account.mapper.AccountStatsMapper">
+
+    <!--  닉네임별 그룹 유저별 그룹  -->
+    <select id="findGroupNicknameByMemberClassKeyToSearchDate" parameterType="accountDomain" resultType="accountDomain">
+        SELECT NICK_NAME                  AS nickname
+             , USER_FK                    AS userFk
+             , A.ACCOUNT_TYPE_CODE        AS accountTypeCode
+             , SUM(A.MONEY)               AS money
+          FROM((SELECT NUM_PK   AS NUM_PK
+                     , NICKNAME AS NICK_NAME
+                 FROM USER_TAB MCI
+                WHERE MEMBER_CLASS_FK = #{memberClassFk}
+                  AND DELETE_YN = 'N'
+               ) AS MCI
+         INNER JOIN
+               (SELECT MONEY                AS MONEY
+                     , ACCOUNT_TYPE_CODE    AS ACCOUNT_TYPE_CODE
+                     , USER_FK              AS USER_FK
+                  FROM (SELECT date_format(START_DATE,'%Y%m')       AS FORMAT_START_DATE
+                             , date_format(END_DATE,'%Y%m')         AS FORMAT_END_DATE
+                             , START_DATE                           AS START_DATE
+                             , END_DATE                             AS END_DATE
+                             , MONEY                                AS MONEY
+                             , ACCOUNT_TYPE_CODE                    AS ACCOUNT_TYPE_CODE
+                             , USER_FK                              AS USER_FK
+                          FROM ACCOUNT_TAB
+                         WHERE DELETE_YN = 'N'
+                       ) AS FA
+                 WHERE FA.FORMAT_START_DATE <![CDATA[ <= date_format(CONCAT(#{searchDate},'01'), '%Y%m') ]]>
+                   AND FA.FORMAT_END_DATE >= date_format(CONCAT(#{searchDate},'01'), '%Y%m')
+               ) A
+            ON MCI.NUM_PK = A.USER_FK
+              )
+        GROUP BY A.ACCOUNT_TYPE_CODE, MCI.NICK_NAME, A.USER_FK
+    </select>
+
+
+	<!--  카테고리별 그룹  -->
+	<select id="findGroupAccountTypeByMemberClassKeyToSearchDate" parameterType="accountDomain" resultType="accountDomain">
+		  SELECT COUNT(*)               AS accountCount
+               , A.ACCOUNT_NAME         AS accountName
+               , A.ACCOUNT_TYPE_NAME    AS accountTypeName
+		    FROM((SELECT NUM_PK   AS NUM_PK
+		           FROM USER_TAB MCI
+		          WHERE MEMBER_CLASS_FK = #{memberClassFk}
+		            AND DELETE_YN = 'N'
+		         ) AS MCI
+		   INNER JOIN
+		         (SELECT MONEY                AS MONEY
+		               , ACCOUNT_TYPE_CODE    AS ACCOUNT_TYPE_CODE
+		               , USER_FK              AS USER_FK
+		               , (SELECT DESCRIPTION FROM COMMON_CODE_TAB WHERE CODE = ACCOUNT_CODE AND CODE_GROUP = 'P0002') AS ACCOUNT_NAME
+				       , CASE WHEN ACCOUNT_TYPE_CODE IN ('00001','00003')
+                              THEN '수입'
+                              ELSE '지출'
+                          END                 AS ACCOUNT_TYPE_NAME
+		            FROM (SELECT date_format(START_DATE,'%Y%m')       AS FORMAT_START_DATE
+		                       , date_format(END_DATE,'%Y%m')         AS FORMAT_END_DATE
+		                       , START_DATE                           AS START_DATE
+		                       , END_DATE                             AS END_DATE
+		                       , MONEY                                AS MONEY
+		                       , ACCOUNT_CODE                         AS ACCOUNT_CODE
+		                       , ACCOUNT_TYPE_CODE                    AS ACCOUNT_TYPE_CODE
+		                       , USER_FK                              AS USER_FK
+		                    FROM ACCOUNT_TAB
+		                   WHERE DELETE_YN = 'N'
+		                 ) AS FA
+		           WHERE FA.FORMAT_START_DATE <![CDATA[ <= date_format(CONCAT(#{searchDate},'01'), '%Y%m') ]]>
+		             AND FA.FORMAT_END_DATE >= date_format(CONCAT(#{searchDate},'01'), '%Y%m')
+		         ) A
+		      ON MCI.NUM_PK = A.USER_FK
+		        )
+		  GROUP BY A.ACCOUNT_TYPE_NAME, A.ACCOUNT_NAME
+	</select>
+</mapper>

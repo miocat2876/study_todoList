@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.famback.fam.memberClass.mapper.MemberClassMapper">
+
+    <select id="existsMemberClass" parameterType="MemberClassDomain" resultType="int">
+        SELECT EXISTS (SELECT NUM_PK
+                         FROM MEMBER_CLASS_TAB
+                        WHERE NUM_PK = #{numPk}
+                      )
+    </select>
+
+    <!-- 방생성  -->
+    <insert id="createMemberClass" parameterType="MemberClassDomain">
+        INSERT INTO MEMBER_CLASS_TAB
+        (NUM_PK, CREATE_DATE, UPDATE_DATE, DELETE_DATE, DELETE_YN, CLASS_NAME)
+        VALUES(#{numPk}, current_timestamp(), NULL, NULL, 'N', #{className});
+    </insert>
+
+    <!-- 방마지막번호   -->
+    <select id="memberClassLastNumber" resultType="int">
+        SELECT IFNULL(MAX(NUM_PK),1)
+          FROM MEMBER_CLASS_TAB
+    </select>
+
+    <!-- 방정보   -->
+    <select id="findMemberClassOneByMemberClassKey" parameterType="MemberClassDomain" resultType="MemberClassDomain">
+         SELECT CLASS_NAME       AS className
+              , NUM_PK           AS numPk
+           FROM MEMBER_CLASS_TAB
+          WHERE DELETE_YN = 'N'
+            AND NUM_PK = #{numPk}
+    </select>
+
+    <!--    참가중인 방의 리스트-->
+    <select id="findClassByMemberKey" parameterType="MemberClassDomain" resultType="MemberClassDomain">
+        SELECT MEMBER_CLASS_FK  AS numPk
+             , CLASS_NAME       AS className
+             , UT.NUM_PK        AS userFk
+          FROM ((SELECT NUM_PK
+                      , MEMBER_CLASS_FK
+                   FROM USER_TAB
+                  WHERE MEMBER_FK = #{memberKey}
+                    AND DELETE_YN = 'N'
+               ) UT
+                  INNER JOIN
+               ( SELECT CLASS_NAME
+                      , NUM_PK
+                   FROM MEMBER_CLASS_TAB
+                  WHERE DELETE_YN = 'N'
+               ) MCT
+             ON UT.MEMBER_CLASS_FK = MCT.NUM_PK
+               )
+    </select>
+</mapper>

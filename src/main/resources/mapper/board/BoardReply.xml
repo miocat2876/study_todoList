@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.famback.fam.board.mapper.BoardReplyMapper">
+
+	<select id="findByBoardKey" parameterType="boardReplyDomain" resultType="boardReplyDomain">
+       WITH RECURSIVE CTE AS (
+               SELECT NUM_PK
+                    , CREATE_DATE
+                    , CONTENT
+                    , PARENT_NUM
+                    , 0 AS LEVEL
+                    , USER_FK
+                    , USER_FK AS PARENT_USER_FK
+                    , CAST(LPAD(ROW_NUMBER() OVER(ORDER BY NUM_PK), 3, '0') AS VARCHAR(99)) ORD
+                 FROM BOARD_REPLY_TAB
+                WHERE PARENT_NUM = 0
+                  AND BOARD_FK = #{boardFk}
+                UNION ALL
+               SELECT BRT.NUM_PK
+                    , BRT.CREATE_DATE
+                    , BRT.CONTENT
+                    , BRT.PARENT_NUM
+                    , CTE.LEVEL + 1
+                    , BRT.USER_FK
+                    , CTE.USER_FK AS PARENT_USER_FK
+                    , CONCAT(CTE.ORD, LPAD(BRT.NUM_PK, 3, '0')) ORD
+                 FROM BOARD_REPLY_TAB AS BRT
+                INNER JOIN CTE AS CTE
+                   ON BRT.PARENT_NUM = CTE.NUM_PK
+            )
+            SELECT CTE.NUM_PK                          AS numPk
+                 , CTE.CONTENT                         AS content
+                 , CTE.PARENT_NUM                      AS parentNum
+                 , CTE.LEVEL                           AS depth
+                 , CTE.CREATE_DATE                     AS createDate
+                 , CTE.USER_FK                         AS userFk
+                 , CTE.PARENT_USER_FK                  AS parentuserFK
+                 , MIC.NICKNAME                        AS nickname
+                 , LOMCI.NICKNAME                      AS parentNickname
+                 , ROW_NUMBER() OVER(ORDER BY CTE.ORD) AS rownumber
+              FROM ((SELECT NUM_PK
+                          , CONTENT
+                          , PARENT_NUM
+                          , LEVEL
+                          , CREATE_DATE
+                          , USER_FK
+                          , PARENT_USER_FK
+                          , cte.ord
+                       FROM CTE
+                    ) CTE
+                      INNER JOIN
+                    (SELECT NUM_PK
+                          , NICKNAME
+                       FROM USER_TAB
+                    ) MIC
+                         ON CTE.USER_FK = MIC.NUM_PK
+                       LEFT OUTER JOIN
+                    (SELECT NUM_PK
+                          , NICKNAME
+                       FROM USER_TAB
+                    ) LOMCI
+                         ON  CTE.PARENT_USER_FK = LOMCI.NUM_PK
+                   )
+             LIMIT #{rowStart} , #{defaultViewRow}
+	</select>
+
+	<select id="findCountByBoardFk" parameterType="boardReplyDomain" resultType="int">
+		WITH RECURSIVE CTE AS (
+           SELECT NUM_PK
+             FROM BOARD_REPLY_TAB
+            WHERE PARENT_NUM = 0
+              AND BOARD_FK = #{boardFk}
+            UNION ALL
+           SELECT BRT.NUM_PK
+             FROM BOARD_REPLY_TAB AS BRT
+            INNER JOIN CTE AS CTE
+               ON BRT.PARENT_NUM = CTE.NUM_PK
+        )
+        SELECT COUNT(*)
+          FROM CTE
+	</select>
+
+	<insert id="commentSave" parameterType="boardReplyDomain">
+        INSERT INTO fam.board_reply_tab
+            (BOARD_FK, CREATE_DATE, UPDATE_DATE, DELETE_DATE, DELETE_YN, CONTENT, PARENT_NUM, USER_FK)
+        VALUES(#{boardFk}, current_timestamp(), NULL, NULL, 'N', #{content}, #{parentNum}, #{userFk});
+
+	</insert>
+
+	<select id="findByBoardOne" parameterType="boardDomain" resultType="boardDomain">
+		SELECT FB.NUM_PK 		AS numPk
+			 , FB.CREATE_DATE	AS createDate
+			 , FB.TITLE			AS title
+			 , FB.CONTENT		AS content
+			 , MCI.NICKNAME 	AS nickName
+		  FROM BOARD_TAB FB
+		 INNER JOIN USER_TAB MCI
+		 	ON FB.USER_FK = MCI.NUM_PK
+		 WHERE FB.NUM_PK = #{numPk}
+		   AND FB.DELETE_YN != 'Y'
+	</select>
+
+	<update id="updateBoard" parameterType="boardDomain">
+		 UPDATE BOARD_TAB
+		    SET TITLE = #{title}
+		   	  , CONTENT = #{content}
+		   	  , UPDATE_DATE = NOW()
+		  WHERE NUM_PK = #{userFk}
+
+	</update>
+
+	<update id="deleteBoard" parameterType="boardDomain">
+		 UPDATE BOARD_TAB
+		   SET DELETE_DATE = NOW()
+		   	 , DELETE_YN = 'Y'
+		 WHERE NUM_PK = #{userFK}
+	</update>
+	
+</mapper>
