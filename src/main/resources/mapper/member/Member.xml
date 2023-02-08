@@ -1,49 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.famback.fam.exemple.mapper.AccountMapper">
-    <select id="todosByMemberKey">
-        SELECT TODO_PK
-             , TODO_CODE
-             , TODO_CONTENT
-             , TODO_STATE
-             , MEMBER_CODE
-             , REQ_DATE
-             , UPDATE_DATE
-          FROM TODO_TB
-         WHERE MEMBER_CODE = ${memberCode}
-    </select>
-    <insert id="bulkTodoInsert">
-        insert into TODO_TB
-             ( TODO_PK
-             , TODO_CODE
-             , TODO_CONTENT
-             , TODO_STATE
-             , MEMBER_CODE
-             , REQ_DATE
-             , UPDATE_DATE
-             )
-        <foreach item="item" index="index" collection="codeKeys"
-                 open="(" separator="UNION ALL" close=")" nullable="true">
-            select NVL(#{item.todoPk}, select nextval(TODO_PK_SEQ))
-                 , #{item.todoCode}
-                 , #{todoContent}
-                 , #{todoState}
-                 , #{membmerCode}
-                 , #{reqDate}
-                 , #{updateDate}
-              from dual
-        </foreach>
-    </insert>
-    <update id="todoStateUpdateByTodoPk">
-        UPDATE TODO_TB
-           SET TODO_STATE = #{todoState}
-         WHERE TODO_PK = #{item.todoPk}
-    </update>
-    <delete id="todoDeleteAllByMemberKey">
-        DELETE *
-          FROM TODO_TB
-         WHERE MEMBER_CODE = ${memberCode}
-    </delete>
+<mapper namespace="com.example.famback.fam.member.mapper.MemberMapper">
+
+<!--  멤버 회원 가입  -->
+<insert id="insertMember" parameterType="memberDomain">
+    INSERT INTO MEMBER_TB
+        (MEMBER_CODE, MEMBER_MAIL, MEMBER_NICKNAME, MEMBER_PASSWORD, REQ_DATE, UPDATE_DATE)
+    VALUES(#{member_code},#{member_mail},#{member_nickname},#{member_password},#{req_date},#{update_date});
+</insert>
 
 </mapper>
