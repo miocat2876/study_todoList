@@ -4,10 +4,14 @@
 <mapper namespace="com.example.famback.fam.member.mapper.MemberMapper">
 
     <!--  멤버 회원 가입  -->
-    <insert id="insertMember" parameterType="memberDomain">
-        INSERT INTO MEMBER_TB
-            (MEMBER_CODE, MEMBER_MAIL, MEMBER_NICKNAME, MEMBER_PASSWORD, REQ_DATE, UPDATE_DATE)
+    <insert id="memberInsert">
+        INSERT INTO member_tb
+        (MEMBER_CODE, MEMBER_MAIL, MEMBER_NICKNAME, MEMBER_PASSWORD, REQ_DATE, UPDATE_DATE)
         VALUES(#{member_code},#{member_mail},#{member_nickname},#{member_password},now(),now());
     </insert>
+
+    <select id="memberList" resultType="com.example.famback.fam.member.domain.MemberDomain">
+        select * from member_tb;
+    </select>
 
 </mapper>

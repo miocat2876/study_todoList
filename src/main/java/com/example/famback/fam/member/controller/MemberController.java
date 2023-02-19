@@ -1,23 +1,26 @@
 package com.example.famback.fam.member.controller;
 
-import com.example.famback.fam.member.request.MemberInsertRequest;
+import com.example.famback.fam.member.domain.MemberDomain;
 import com.example.famback.fam.member.service.MemberService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/member")
-@RequiredArgsConstructor
 public class MemberController {
 
-	private final MemberService memberService;
+	@Autowired
+	MemberService memberService;
+
+	@PostMapping("")
+	public List<MemberDomain> memberList(@RequestBody MemberDomain memberDomain) {
+		return memberService.memberList(memberDomain);
+	}
 
 	@PostMapping("/signUp")
-	public boolean memberInsert(@RequestBody MemberInsertRequest memberInsertRequest) {
-
-		return memberService.memberInsert(memberInsertRequest);
+	public void memberInsert(@RequestBody MemberDomain memberDomain) {
+		memberService.memberInsert(memberDomain);
 	}
 }

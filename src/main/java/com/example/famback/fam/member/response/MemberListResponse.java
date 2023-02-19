@@ -1,11 +1,9 @@
-package com.example.famback.fam.member.request;
+package com.example.famback.fam.member.response;
 
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 
 @Data
-public class MemberInsertRequest {
+public class MemberListResponse {
 
     private int member_pk;
     private String member_code;

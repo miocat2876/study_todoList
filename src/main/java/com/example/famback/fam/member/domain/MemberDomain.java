@@ -2,11 +2,7 @@ package com.example.famback.fam.member.domain;
 
 import lombok.*;
 
-@Getter
-@Setter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Data
 public class MemberDomain {
 
     private int member_pk;

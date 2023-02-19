@@ -6,34 +6,30 @@ import com.example.famback.fam.member.mapper.MemberMapper;
 import com.example.famback.fam.member.request.MemberInsertRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Log4j2
 @Service
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 public class MemberService {
 
-    private final MemberMapper memberMapper;
+//    private final MemberMapper memberMapper;
+
+    @Autowired
+    MemberMapper memberMapper;
+
+    public List<MemberDomain> memberList(MemberDomain memberDomain) {
+        if (memberDomain == null) {
+            memberDomain = new MemberDomain();
+        }
+        return memberMapper.memberList(memberDomain);
+    }
 
     // 회원 가입
-    public boolean memberInsert(MemberInsertRequest memberInsertRequest) {
-        if(memberInsertRequest == null
-        || memberInsertRequest.getMember_code() == null
-        || memberInsertRequest.getMember_mail() == null
-        || memberInsertRequest.getMember_nickname() == null
-        || memberInsertRequest.getMember_password() == null
-        || memberInsertRequest.getReq_date() == null
-        || memberInsertRequest.getUpdate_date() == null) throw new NotRequiredDataException();
-
-        MemberDomain memberDomain = MemberDomain.builder()
-                .member_code(memberInsertRequest.getMember_code())
-                .member_mail(memberInsertRequest.getMember_mail())
-                .member_nickname(memberInsertRequest.getMember_nickname())
-                .member_password(memberInsertRequest.getMember_password())
-                .req_date(memberInsertRequest.getReq_date())
-                .update_date(memberInsertRequest.getUpdate_date())
-                .build();
-
-        return memberMapper.insertMember(memberDomain) == 1;
+    public void memberInsert(MemberDomain memberDomain) {
+        memberMapper.memberInsert(memberDomain);
     }
 }
